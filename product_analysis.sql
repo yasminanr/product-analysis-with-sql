@@ -82,3 +82,79 @@ SELECT
 FROM next_pageview_url
 GROUP BY time_period
 ORDER BY time_period;
+
+-- Building Product-Level Conversion Funnels
+
+DROP TEMPORARY TABLE IF EXISTS conversion_funnel;
+
+CREATE TEMPORARY TABLE conversion_funnel
+WITH product_page AS
+(
+	SELECT 
+		website_session_id,
+		website_pageview_id,
+		pageview_url AS product_viewed
+	FROM website_pageviews 
+	WHERE created_at BETWEEN '2013-01-06' AND '2013-04-10'
+		AND pageview_url IN ('/the-original-mr-fuzzy', '/the-forever-love-bear')
+),
+find_next_url AS 
+(
+	SELECT DISTINCT
+		wp.pageview_url 
+	FROM product_page pp
+	JOIN website_pageviews wp
+		ON wp.website_session_id = pp.website_session_id
+			AND wp.website_pageview_id > pp.website_pageview_id
+),
+next_pageviews AS 
+(
+	SELECT 
+		pp.website_session_id,
+		pp.product_viewed,
+		CASE WHEN wp.pageview_url = '/cart' THEN 1 ELSE 0 END AS cart_page,
+		CASE WHEN wp.pageview_url = '/shipping' THEN 1 ELSE 0 END AS shipping_page,
+		CASE WHEN wp.pageview_url = '/billing-2' THEN 1 ELSE 0 END AS billing_page,
+		CASE WHEN wp.pageview_url = '/thank-you-for-your-order' THEN 1 ELSE 0 END AS thankyou_page
+	FROM product_page pp
+	LEFT JOIN website_pageviews wp 
+		ON wp.website_session_id = pp.website_session_id
+			AND wp.website_pageview_id > pp.website_pageview_id
+	ORDER BY pp.website_session_id, wp.created_at
+),
+sessions_made_it AS 
+(
+	SELECT 
+		website_session_id,
+		CASE 
+			WHEN product_viewed = '/the-original-mr-fuzzy' THEN 'mrfuzzy'
+			WHEN product_viewed = '/the-forever-love-bear' THEN 'lovebear'
+		END AS product_seen,
+		MAX(cart_page) AS cart_made_it,
+		MAX(shipping_page) AS shipping_made_it,
+		MAX(billing_page) AS billing_made_it,
+		MAX(thankyou_page) AS thankyou_made_it
+	FROM next_pageviews
+	GROUP BY website_session_id, product_seen
+)
+SELECT 
+	product_seen,
+	COUNT(DISTINCT website_session_id) AS sessions_count,
+	COUNT(DISTINCT CASE WHEN cart_made_it = 1 THEN website_session_id ELSE NULL END) AS to_cart_count,
+	COUNT(DISTINCT CASE WHEN shipping_made_it = 1 THEN website_session_id ELSE NULL END) AS to_shipping_count,
+	COUNT(DISTINCT CASE WHEN billing_made_it = 1 THEN website_session_id ELSE NULL END) AS to_billing_count,
+	COUNT(DISTINCT CASE WHEN thankyou_made_it = 1 THEN website_session_id ELSE NULL END) AS to_thankyou_count
+FROM sessions_made_it
+GROUP BY product_seen;
+
+SELECT 
+	*
+FROM conversion_funnel;
+
+SELECT
+	product_seen,
+	to_cart_count / sessions_count AS products_clickthrough_rt,
+	to_shipping_count / to_cart_count AS cart_clickthrough_rt,
+	to_billing_count / to_shipping_count AS shipping_clickthrough_rt,
+	to_thankyou_count / to_billing_count AS billing_clickthrough_rt
+FROM conversion_funnel;
