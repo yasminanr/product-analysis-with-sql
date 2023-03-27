@@ -15,7 +15,7 @@ We will use MySQL to analyze e-commerce website product data from an online reta
 
 <img width="700" alt="website_pageview" src="https://user-images.githubusercontent.com/70214561/226083353-53d7104b-70e6-4576-9e03-d58d088c982f.png">
 
-`orders`
+`orders` - This table shows every order made by customers. Records consist of customers' orders with order id, time when the order is created, website session id, unique user id, primary product id, count of products purchased, price in USD, and cost of goods sold (cogs) in USD.
 
 <img width="1183" alt="orders" src="https://user-images.githubusercontent.com/70214561/226083361-b9280891-8ba4-4060-b0eb-4fabc9fe939d.png">
 
