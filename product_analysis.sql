@@ -158,3 +158,43 @@ SELECT
 	to_billing_count / to_shipping_count AS shipping_clickthrough_rt,
 	to_thankyou_count / to_billing_count AS billing_clickthrough_rt
 FROM conversion_funnel;
+
+-- Cross-Sell Analysis
+
+WITH cart_pageviews AS
+(
+	SELECT 
+		website_session_id,
+		website_pageview_id,
+		CASE 
+			WHEN created_at < '2013-09-25' THEN 'A.pre_cross_sell'
+			WHEN created_at >= '2013-09-25' THEN 'B.post_cross_sell'
+		END AS time_period
+	FROM website_pageviews 
+	WHERE created_at BETWEEN '2013-08-25' AND '2013-10-25'
+		AND pageview_url = '/cart'
+),
+next_pageview_id AS 
+(
+	SELECT 
+		cp.time_period,
+		cp.website_session_id,
+		MIN(wp.website_pageview_id) AS min_next_pageview_id
+	FROM cart_pageviews cp
+	LEFT JOIN website_pageviews wp 
+		ON cp.website_session_id = wp.website_session_id 
+			AND wp.website_pageview_id > cp.website_pageview_id
+	GROUP BY cp.time_period, cp.website_session_id
+)
+SELECT 
+	npi.time_period,
+	COUNT(DISTINCT npi.website_session_id) AS cart_sessions,
+	COUNT(DISTINCT npi.min_next_pageview_id) AS clickthroughs,
+	COUNT(DISTINCT npi.min_next_pageview_id)/COUNT(DISTINCT npi.website_session_id) AS cart_ctr,
+	SUM(o.items_purchased)/COUNT(DISTINCT o.order_id) AS products_per_order,
+	SUM(o.price_usd)/COUNT(DISTINCT o.order_id) AS aov,
+	SUM(o.price_usd)/COUNT(DISTINCT npi.website_session_id) AS revenue_per_cart_session
+FROM next_pageview_id npi
+LEFT JOIN orders o
+	USING (website_session_id)
+GROUP BY npi.time_period;
