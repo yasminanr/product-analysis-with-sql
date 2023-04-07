@@ -198,3 +198,20 @@ FROM next_pageview_id npi
 LEFT JOIN orders o
 	USING (website_session_id)
 GROUP BY npi.time_period;
+
+-- Product Portfolio Expansion
+
+SELECT
+	CASE 
+		WHEN ws.created_at < '2013-12-12' THEN 'A.pre_birthday_bear'
+		WHEN ws.created_at >= '2013-12-12' THEN 'B.post_birthday_bear'
+	END AS time_period,
+	COUNT(DISTINCT o.order_id)/COUNT(DISTINCT ws.website_session_id) AS conv_rate,
+	SUM(o.price_usd)/COUNT(DISTINCT o.order_id) AS aov,
+	SUM(o.items_purchased)/COUNT(DISTINCT o.order_id) AS products_per_order,
+	SUM(o.price_usd)/COUNT(DISTINCT ws.website_session_id) AS revenue_per_session
+FROM website_sessions ws 
+LEFT JOIN orders o 
+	USING (website_session_id)
+WHERE ws.created_at BETWEEN '2013-11-12' AND '2014-01-12'
+GROUP BY time_period;
