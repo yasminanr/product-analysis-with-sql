@@ -215,3 +215,40 @@ LEFT JOIN orders o
 	USING (website_session_id)
 WHERE ws.created_at BETWEEN '2013-11-12' AND '2014-01-12'
 GROUP BY time_period;
+
+-- More detailed approach:
+
+WITH sessions AS
+(
+	SELECT 
+		DISTINCT website_session_id,
+		CASE 
+			WHEN created_at < '2013-12-12' THEN 'A.pre_birthday_bear'
+			WHEN created_at >= '2013-12-12' THEN 'B.post_birthday_bear'
+		END AS time_period
+	FROM website_sessions
+	WHERE created_at BETWEEN '2013-11-12' AND '2014-01-12'
+),
+product_sessions AS 
+(
+	SELECT 
+		s.website_session_id,
+		o.order_id,
+		AVG(o.price_usd) AS aov_session,
+		AVG(o.items_purchased) AS products_count,
+		SUM(o.price_usd) AS revenue_session
+	FROM sessions s
+	JOIN orders o 
+		USING (website_session_id)
+	GROUP BY s.website_session_id, o.order_id
+)
+SELECT 
+	s.time_period,
+	COUNT(DISTINCT ps.order_id)/COUNT(DISTINCT s.website_session_id) AS conv_rate,
+	AVG(ps.aov_session) AS aov,
+	AVG(ps.products_count) AS products_per_order,
+	SUM(ps.revenue_session)/COUNT(DISTINCT s.website_session_id) AS revenue_per_session
+FROM sessions s
+LEFT JOIN product_sessions ps 
+	USING (website_session_id)
+GROUP BY s.time_period;
