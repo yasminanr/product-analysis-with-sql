@@ -19,10 +19,10 @@ We will use MySQL to analyze e-commerce website product data from an online reta
 
 <img width="1183" alt="orders" src="https://user-images.githubusercontent.com/70214561/226083361-b9280891-8ba4-4060-b0eb-4fabc9fe939d.png">
 
-`order_items`
+`order_items` - This table shows every item contained in every order made by customers.
 
 <img width="986" alt="order_items" src="https://user-images.githubusercontent.com/70214561/226083371-80daeea5-be3d-4587-95fa-9662eacdc010.png">
 
-`order_item_refunds`
+`order_item_refunds` - This table shows every ordered item that is returned and refunded.
 
 <img width="827" alt="order_item_refunds" src="https://user-images.githubusercontent.com/70214561/226083379-68fe7272-6a31-4fbc-bd48-32ad82e0dcbf.png">
