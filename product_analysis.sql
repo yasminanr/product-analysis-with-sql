@@ -252,3 +252,26 @@ FROM sessions s
 LEFT JOIN product_sessions ps 
 	USING (website_session_id)
 GROUP BY s.time_period;
+
+-- Analyzing Product Refund Rates
+
+SELECT 
+	YEAR(oi.created_at) AS year,
+	MONTH(oi.created_at) AS month,
+	COUNT(DISTINCT CASE WHEN oi.product_id = 1 THEN oi.order_item_id ELSE NULL END) AS prod1_orders,
+	COUNT(DISTINCT CASE WHEN oi.product_id = 1 THEN oir.order_item_id ELSE NULL END)/
+		COUNT(DISTINCT CASE WHEN oi.product_id = 1 THEN oi.order_item_id ELSE NULL END) AS prod1_refund_rate,
+	COUNT(DISTINCT CASE WHEN oi.product_id = 2 THEN oi.order_item_id ELSE NULL END)	AS prod2_orders,
+	COUNT(DISTINCT CASE WHEN oi.product_id = 2 THEN oir.order_item_id ELSE NULL END)/
+		COUNT(DISTINCT CASE WHEN oi.product_id = 2 THEN oi.order_item_id ELSE NULL END) AS prod2_refund_rate,
+	COUNT(DISTINCT CASE WHEN oi.product_id = 3 THEN oi.order_item_id ELSE NULL END) AS prod3_orders,
+	COUNT(DISTINCT CASE WHEN oi.product_id = 3 THEN oir.order_item_id ELSE NULL END)/
+		COUNT(DISTINCT CASE WHEN oi.product_id = 3 THEN oi.order_item_id ELSE NULL END) AS prod3_refund_rate,
+	COUNT(DISTINCT CASE WHEN oi.product_id = 4 THEN oi.order_item_id ELSE NULL END) AS prod4_orders,
+	COUNT(DISTINCT CASE WHEN oi.product_id = 4 THEN oir.order_item_id ELSE NULL END)/
+		COUNT(DISTINCT CASE WHEN oi.product_id = 4 THEN oi.order_item_id ELSE NULL END) AS prod4_refund_rate
+FROM order_items oi 
+LEFT JOIN order_item_refunds oir 
+	USING (order_item_id)
+WHERE oi.created_at < '2014-10-15'
+GROUP BY year, month;
